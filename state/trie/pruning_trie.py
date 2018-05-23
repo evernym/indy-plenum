@@ -1022,11 +1022,12 @@ class Trie:
         proof.pop()
         return o
 
-    def produce_spv_proof_for_key_prfx(self, key_prfx, root=None):
+    def produce_spv_proof_for_key_prfx(self, key_prfx, root=None, only_prefix_prf=False):
         root = root or self.root_node
         proof.push(RECORDING)
         prefix_node = self._get_last_node_for_prfx(root, bin_to_nibbles(to_string(key_prfx)))
-        list(self._iter_branch(prefix_node))
+        if not only_prefix_prf:
+            list(self._iter_branch(prefix_node))
         o = proof.get_nodelist()
         proof.pop()
         return o

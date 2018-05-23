@@ -317,8 +317,8 @@ def test_proof_multiple_prefix_nodes():
 
     all_prefixes = (prefix_1, prefix_2, prefix_3, prefix_4)
 
-    other_nodes_count = 1000
-    prefix_nodes_count = 100
+    other_nodes_count = 100
+    prefix_nodes_count = 20
 
     # Some nodes before prefix nodes
     for _ in range(other_nodes_count):
@@ -351,3 +351,33 @@ def test_proof_multiple_prefix_nodes():
                    not k.startswith(prefix)}
         assert not client_trie.verify_spv_proof_multi(node_trie.root_hash,
                                                       encoded, proof_nodes)
+
+
+
+    prefix_prf = node_trie.produce_spv_proof_for_key_prfx(prefix.encode(),
+                                                          node_trie.root_node, only_prefix_prf=True)
+    print(prefix_prf)
+    prefix_prf.append(deepcopy(node_trie.root_node))
+    # _db = KeyValueStorageLeveldb(tmpdir_factory.mktemp('').strpath, 'temp_db')
+    _db = KeyValueStorageInMemory()
+
+    for node in prefix_prf:
+        R = rlp_encode(node)
+        H = sha3(R)
+        _db.put(H, R)
+
+    new_trie = Trie(PersistentDB(_db))
+
+    for k, v in key_vals.items():
+        if not k.startswith(prefix):
+            continue
+        v = rlp_encode([v])
+        new_trie.update(k.encode(), v)
+
+    new_trie.root_hash = node_trie.root_hash
+    for k, v in key_vals.items():
+        if not k.startswith(prefix):
+            continue
+
+        _v = new_trie.get(k.encode())
+        assert v.encode() == rlp_decode(_v)[0]
