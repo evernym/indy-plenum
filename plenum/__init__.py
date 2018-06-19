@@ -3,7 +3,7 @@ plenum package
 
 """
 from __future__ import absolute_import, division, print_function
-
+import pip
 import sys
 if sys.version_info < (3, 5, 0):
     raise ImportError("Python 3.5.0 or later required.")
@@ -27,25 +27,26 @@ def setup_plugins():
     global PLUGIN_CLIENT_REQUEST_FIELDS
 
     config = getConfigOnce()
+    installed_packages = pip.get_installed_distributions()
 
-    plugin_root = config.PLUGIN_ROOT
-    try:
-        plugin_root = importlib.import_module(plugin_root)
-    except ImportError:
-        raise ImportError('Incorrect plugin root {}. No such package found'.
-                          format(plugin_root))
+    # try:
+
+    #except ImportError:
+    #    raise ImportError('Incorrect plugin root {}. No such package found'.
+    #                      format(site_package_pwd))
     enabled_plugins = config.ENABLED_PLUGINS
     for plugin_name in enabled_plugins:
-        plugin_path = os.path.join(plugin_root.__path__[0],
-                                   plugin_name, '__init__.py')
-        spec = spec_from_file_location('__init__.py', plugin_path)
-        init = module_from_spec(spec)
-        spec.loader.exec_module(init)
-        plugin_globals = init.__dict__
-        if 'LEDGER_IDS' in plugin_globals:
-            PLUGIN_LEDGER_IDS.update(plugin_globals['LEDGER_IDS'])
-        if 'CLIENT_REQUEST_FIELDS' in plugin_globals:
-            PLUGIN_CLIENT_REQUEST_FIELDS.update(plugin_globals['CLIENT_REQUEST_FIELDS'])
+        if plugin_name in installed_packages:
+            plugin_path = os.path.join(plugin_name.__path__[0],
+                                       plugin_name, '__init__.py')
+            spec = spec_from_file_location('__init__.py', plugin_path)
+            init = module_from_spec(spec)
+            spec.loader.exec_module(init)
+            plugin_globals = init.__dict__
+            if 'LEDGER_IDS' in plugin_globals:
+                PLUGIN_LEDGER_IDS.update(plugin_globals['LEDGER_IDS'])
+            if 'CLIENT_REQUEST_FIELDS' in plugin_globals:
+                PLUGIN_CLIENT_REQUEST_FIELDS.update(plugin_globals['CLIENT_REQUEST_FIELDS'])
 
     # Reloading message types since some some schemas would have been changed
     import plenum.common.messages.node_messages
